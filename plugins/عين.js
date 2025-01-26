@@ -1,62 +1,120 @@
-const _0xdb0f29 = _0x36c4;
-(function (_0x38a0bb, _0x589a4f) {
-    const _0x3a334b = _0x36c4;
-    const _0x55092c = _0x38a0bb();
-    while (!![]) {
-        try {
-            const _0x4051f3 = parseInt(_0x3a334b(0x15)) / 0x1 + -parseInt(_0x3a334b(0xb)) / 0x2 * (parseInt(_0x3a334b(0xa)) / 0x3) + parseInt(_0x3a334b(0x10)) / 0x4 * (-parseInt(_0x3a334b(0x1c)) / 0x5) + parseInt(_0x3a334b(0x2)) / 0x6 * (-parseInt(_0x3a334b(0x6)) / 0x7) + parseInt(_0x3a334b(0x12)) / 0x8 * (-parseInt(_0x3a334b(0xf)) / 0x9) + -parseInt(_0x3a334b(0x4)) / 0xa + parseInt(_0x3a334b(0x1a)) / 0xb;
-            if (_0x4051f3 === _0x589a4f) {
-                break;
+import { prepareWAMessageMedia, generateWAMessageFromContent } from '@whiskeysockets/baileys';
+
+const timeout = 60000;
+
+let handler = async (m, { conn, command }) => {
+    if (command.startsWith('answer_')) {
+        let id = m.chat;
+        let shanks = conn.shanks[id];
+
+        if (!shanks) {
+            return conn.reply(m.chat, '❌ لا يوجد اختبار نشط في الوقت الحالي.', m);
+        }
+
+        let selectedAnswerIndex = parseInt(command.split('_')[1]);
+        if (isNaN(selectedAnswerIndex) || selectedAnswerIndex < 1 || selectedAnswerIndex > 4) {
+            return conn.reply(m.chat, '❌ اختيار غير صالح.', m);
+        }
+
+        let selectedAnswer = shanks.options[selectedAnswerIndex - 1];
+        let isCorrect = shanks.correctAnswer === selectedAnswer;
+
+        if (isCorrect) {
+            await conn.reply(m.chat, `✅ إجابة صحيحة! ربحت 500 XP!`, m);
+            global.db.data.users[m.sender].exp += 500;
+            clearTimeout(shanks.timer);
+            delete conn.shanks[id];
+        } else {
+            shanks.attempts -= 1;
+            if (shanks.attempts > 0) {
+                await conn.reply(m.chat, `❌ إجابة خاطئة. تبقى ${shanks.attempts} محاولات.`, m);
             } else {
-                _0x55092c['push'](_0x55092c['shift']());
+                await conn.reply(m.chat, `❌ انتهت المحاولات. الإجابة الصحيحة هي: ${shanks.correctAnswer}`, m);
+                clearTimeout(shanks.timer);
+                delete conn.shanks[id];
             }
-        } catch (_0x2d29cc) {
-            _0x55092c['push'](_0x55092c['shift']());
+        }
+    } else {
+        try {
+            conn.shanks = conn.shanks || {};
+            let id = m.chat;
+
+            if (conn.shanks[id]) {
+                return conn.reply(m.chat, '⌛ لا يمكنك بدء اختبار جديد حتى تنتهي من الاختبار الحالي.', m);
+            }
+
+            const response = await fetch('https://gist.githubusercontent.com/Kyutaka101/4e01c190b7d67225ad7a86d388eeedf6/raw/67f0de059cea4b965a3f3bf211c12fc9c48043e5/gistfile1.txt');
+            const shanksData = await response.json();
+
+            if (!shanksData) {
+                throw new Error('فشل في الحصول على بيانات الاختبار.');
+            }
+
+            const shanksItem = shanksData[Math.floor(Math.random() * shanksData.length)];
+            const { img, name } = shanksItem;
+
+            let options = [name];
+            while (options.length < 4) {
+                let randomItem = shanksData[Math.floor(Math.random() * shanksData.length)].name;
+                if (!options.includes(randomItem)) {
+                    options.push(randomItem);
+                }
+            }
+            options.sort(() => Math.random() - 0.5);
+
+            const media = await prepareWAMessageMedia({ image: { url: img } }, { upload: conn.waUploadToServer });
+
+            const interactiveMessage = {
+                body: {
+                    text: `🖼️ تعرف على الشخصية من الصورة 🖼️\n\n🎮 معرفة الشخصيات\n⚡ الوقت: ${(timeout / 1000).toFixed(2)} ثانية\n💰 الجائزة: 500 XP`,
+                },
+                footer: { text: 'اختر الإجابة الصحيحة:' },
+                header: {
+                    title: 'مرحبا',
+                    subtitle: 'اختر أحد الخيارات أدناه:',
+                    hasMediaAttachment: true,
+                    imageMessage: media.imageMessage,
+                },
+                nativeFlowMessage: {
+                    buttons: options.map((option, index) => ({
+                        name: 'quick_reply',
+                        buttonParamsJson: JSON.stringify({
+                            display_text: `『${index + 1}┇${option}┇』`,
+                            id: `.answer_${index + 1}`
+                        })
+                    })),
+                },
+            };
+
+            let msg = generateWAMessageFromContent(m.chat, {
+                viewOnceMessage: {
+                    message: { interactiveMessage },
+                },
+            }, { userJid: conn.user.jid, quoted: m });
+
+            conn.relayMessage(m.chat, msg.message, { messageId: msg.key.id });
+
+            conn.shanks[id] = {
+                correctAnswer: name,
+                options: options,
+                timer: setTimeout(async () => {
+                    if (conn.shanks[id]) {
+                        await conn.reply(m.chat, `⌛ انتهى الوقت. الإجابة الصحيحة هي: ${name}`, m);
+                        delete conn.shanks[id];
+                    }
+                }, timeout),
+                attempts: 2
+            };
+
+        } catch (e) {
+            console.error(e);
+            conn.reply(m.chat, 'حدث خطأ في إرسال الرسالة.', m);
         }
     }
-}(_0x4b4d, 0x8c908));
-
-function _0x36c4(_0x45d52b, _0x4b4d78) {
-    const _0x36c427 = _0x4b4d();
-    _0x36c4 = function (_0x38a3aa, _0x35381e) {
-        _0x38a3aa = _0x38a3aa - 0x0;
-        let _0x387c1e = _0x36c427[_0x38a3aa];
-        return _0x387c1e;
-    };
-    return _0x36c4(_0x45d52b, _0x4b4d78);
-}
-let timeout = 0xea60;
-let poin = 0x3e8;
-let handler = async (_0x3c596a, {
-    conn: _0x57de8f,
-    command: _0x15e0c9,
-    usedPrefix: _0x31d28c
-}) => {
-    const _0x25a9c0 = _0x36c4;
-    _0x57de8f[_0x25a9c0(0x8)] = _0x57de8f['tebakbendera'] ? _0x57de8f['tebakbendera'] : {};
-    let _0x3e0d08 = _0x3c596a['chat'];
-    if (_0x3e0d08 in _0x57de8f[_0x25a9c0(0x8)]) {
-        _0x57de8f[_0x25a9c0(0x9)](_0x3c596a[_0x25a9c0(0x0)], _0x25a9c0(0xc), _0x57de8f[_0x25a9c0(0x8)][_0x3e0d08][0x0]);
-        throw ![];
-    }
-    let _0x4c11c2 = await (await fetch('https://raw.githubusercontent.com/Raedxx1/-/main/Src/%D8%B9%D9%8A%D9%86.json'))[_0x25a9c0(0x7)]();
-    let _0x4ad1ca = _0x4c11c2[Math[_0x25a9c0(0xe)](Math[_0x25a9c0(0x17)]() * _0x4c11c2[_0x25a9c0(0x11)])];
-    let _0x37cb43 = ('*' + _0x15e0c9[_0x25a9c0(0x18)]() + _0x25a9c0(0x16) + (timeout / 0x3e8)['toFixed'](0x2) + _0x25a9c0(0x1b) + _0x31d28c + '*استسلم للاستسلام👾*\x0a ❐↞┇الـجـائـزة💵↞ ' + poin + _0x25a9c0(0x1))[_0x25a9c0(0x1e)]();
-    _0x57de8f['tebakbendera'][_0x3e0d08] = [await _0x57de8f[_0x25a9c0(0x19)](_0x3c596a[_0x25a9c0(0x0)], _0x4ad1ca['img'], '', _0x37cb43, _0x3c596a), _0x4ad1ca, poin, setTimeout(() => {
-        const _0xd9e57c = _0x36c4;
-        if (_0x57de8f[_0xd9e57c(0x8)][_0x3e0d08]) _0x57de8f[_0xd9e57c(0x9)](_0x3c596a[_0xd9e57c(0x0)], _0xd9e57c(0x13) + _0x4ad1ca[_0xd9e57c(0x3)] + '*', _0x57de8f[_0xd9e57c(0x8)][_0x3e0d08][0x0]);
-        delete _0x57de8f[_0xd9e57c(0x8)][_0x3e0d08];
-    }, timeout)];
 };
 
-function _0x4b4d() {
-    const _0x5adff3 = [' دولار\x0a*『𝑻𝑼𝑹𝑩𝑶﹝⚡️﹞𝑩𝑶𝑻』*     ', '1326522zrrUIZ', 'name', '9081060EKrvDl', 'command', '21ggFzmZ', 'json', 'tebakbendera', 'reply', '3cpoRiU', '542844GTeBIP', '*في سؤال هنا يا ياورع 🐦‍⬛*', 'guessflag', 'floor', '9BzZBQY', '12820qPGAli', 'length', '4663832lagByn', 'الوقت خلص!\x0aالاجابه هي *', 'game', '908765sOMowA', '*\x0a  ❐↞┇الـوقـت⏳↞ *', 'random', 'toUpperCase', 'sendFile', '25029840HlpAEC', '* ثانيه\x0a  استخدم ', '285FAvvgx', 'tags', 'trim', 'chat'];
-    _0x4b4d = function () {
-        return _0x5adff3;
-    };
-    return _0x4b4d();
-}
-handler['help'] = [_0xdb0f29(0xd)];
-handler[_0xdb0f29(0x1d)] = [_0xdb0f29(0x14)];
-handler[_0xdb0f29(0x5)] = /^عين/i;
+handler.help = ['شخصية'];
+handler.tags = ['game'];
+handler.command = /^(شخصية|عين|answer_\d+)$/i;
+
 export default handler;
