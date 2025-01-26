@@ -19,6 +19,6 @@ let handler = async (m, { conn, usedPrefix, command }) => {
 }
 
 handler.alias = ['tomp3', 'toaudio']
-handler.command = /^(لصوت|صوتي|اغنيه)$/i
+handler.command = /^(لصوت|صوتي|j)$/i
 
 export default handler
