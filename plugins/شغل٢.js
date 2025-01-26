@@ -1,15 +1,14 @@
 import fetch from "node-fetch";
 import yts from "yt-search";
 
-const audioCommands = ['اغنيه', 'اغنية', 'صوت', 'شغل']; // قسم الصوت
+const audioCommands = ['اغنيه', 'اغنية', 'صوت', 'aaa']; // قسم الصوت
 const videoCommands = ['فيديو', 'مقطع'];  // قسم الفيديو
 
 let handler = async (m, { conn, command, args, text }) => {
     if (!text) {
         let responseMessage = audioCommands.includes(command)
             ? '> *\`『 اكتب اسم الاغنيه الي عايز تشغلها 🧚🏻‍♀️ 』\`*'.trim()
-            : `*\`『 اكتب اسم الفيديو الي انت عيزو 🧚🏻‍♀️ 』\`*`.trim();
-
+            : `*\`『 اكتب اسم الفيديو الي انت عيزو 🧚🏻‍♀️ 』\`*`.trim();                                                                                      
         throw responseMessage;
     }
 
