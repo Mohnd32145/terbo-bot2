@@ -41,7 +41,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
   
   const imagurl = 'https://files.catbox.moe/hm0l6b.jpg';
  
- let chname = '⛊  𝚂𝙰𝚈𝙴𝙳-𝚂𝙷𝙰𝚆𝙰𝚉𝙰';
+ let chname = '𝑻𝑬𝑹𝑩𝑶〔⚡️〕𝑩𝑶𝑻';
  let chid = '120363316635505389@newsletter';
   
   const captain = `
@@ -86,8 +86,7 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
           body: "❲ قسم البحث ❳",
           thumbnailUrl: imagurl,
           mediaUrl: imagurl,
-          mediaType: 1,
-          sourceUrl: 'https://www.atom.bio/shawaza-2000/',
+          mediaType: https://youtube.com',
           renderLargerThumbnail: false
         }
       },
