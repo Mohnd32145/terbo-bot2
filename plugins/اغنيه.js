@@ -1,96 +1,123 @@
-import axios from "axios";
-import yts from "yt-search";
+import fetch from 'node-fetch';
+import yts from 'yt-search';
+import ytdl from 'ytdl-core';
+import axios from 'axios';
+import { youtubedl, youtubedlv2 } from '@bochilteam/scraper';
+import { prepareWAMessageMedia, generateWAMessageFromContent } from '@whiskeysockets/baileys';
 
-const formatAudio = ['mp3'];
-const apiBaseUrl = "https://p.oceansaver.in/ajax";
-
-const downloadMedia = async (url) => {
-  const apiUrl = `${apiBaseUrl}/download.php?format=mp3&url=${encodeURIComponent(url)}&api=YOUR_API_KEY`;
-
-  try {
-    const { data } = await axios.get(apiUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    if (!data || !data.success) throw new Error('فشل الحصول على تفاصيل الفيديو.');
-
-    return await checkProgress(data.id);
-  } catch (error) {
-    throw new Error(`خطأ أثناء التنزيل: ${error.message}`);
-  }
-};
-
-const checkProgress = async (id) => {
-  const progressUrl = `${apiBaseUrl}/progress.php?id=${id}`;
-  let attempts = 0;
-  const maxAttempts = 30;
-
-  while (attempts < maxAttempts) {
-    const { data } = await axios.get(progressUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    if (data && data.success && data.progress === 1000) {
-      return data.download_url;
+const handler = async (m, { command, usedPrefix, conn, args, text }) => {
+ 
+    if (!text) {
+      await conn.sendMessage(m.chat, { text: `*❲ ❗ ❳ يرجي إدخال نص للبحث عن الأغنية .*\nمثال :\n> ➤  ${usedPrefix + command} القرآن الكريم\n> ➤  ${usedPrefix + command} https://youtu.be/JLWRZ8eWyZo?si=EmeS9fJvS_OkDk7p` }, { quoted: m });
+      await conn.sendMessage(m.chat, { react: { text: '❗', key: m.key } });
+      return;
     }
-    attempts++;
-    await new Promise(resolve => setTimeout(resolve, 2000));
-  }
-  throw new Error('العملية استغرقت وقتًا طويلاً.');
+    await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } });
+    
+    try {
+      const yt_play = await search(args.join(' '));
+      
+      const dataMessage = `*❲ نتيجة البحث عن : ${text} ❳*\n➤ العنوان : ${yt_play[0].title}\n➤ النشر : ${yt_play[0].ago}\n➤ الطول : ${secondString(yt_play[0].duration.seconds)}\n➤ الرابط : ${yt_play[0].url}\n➤ المشاهدات : ${MilesNumber(yt_play[0].views)}\n➤ الصانع : ${yt_play[0].author.name}\n➤ القناة : ${yt_play[0].author.url}\n> انتظر جاري تحميل الاغنيه ...`.trim();
+
+      const iturl = yt_play[0].url;
+      const itimg = yt_play[0].thumbnail;
+      
+      await conn.sendMessage(m.chat, { image: {url: itimg}, caption: dataMessage}, { quoted: m });
+      
+      try {
+      
+      const playmp3 = await getmp3url(iturl);
+      
+      const { title, videoUrl, thumbnail } = playmp3;
+      
+    /* const caption = ` *📌 Titulo:* ${title}`;
+    
+    await conn.sendMessage(m.chat, {
+      video: { url: videoUrl },
+      mimetype: 'video/mp4',
+      fileName: `${title}.mp4`,
+      caption: caption,
+      thumbnail: await fetch(thumbnail.url).then(res => res.buffer())
+    }, { quoted: m }); */
+        
+           await conn.sendMessage(m.chat, { react: { text: '✔️', key: m.key } });
+           
+             conn.sendMessage(m.chat, {audio: {url: videoUrl}, mimetype: 'audio/mpeg', fileName: title + '.mp3'}, {quoted: m});
+          } catch {
+          
+            await conn.reply(m.chat, '*❲ ❗ ❳ حدث خطأ عند جلب الاغنيه.*', m);
+          }
+        
+      
+      
+        } catch {
+      await conn.sendMessage(m.chat, { text: `*❲ ❗ ❳ حدث خطأ عند البحث عن الأغنية .*\nيرجي ادخال نص صحيح أو رابط مثال :\n> ➤  ${usedPrefix + command} القرآن الكريم\n> ➤  ${usedPrefix + command} https://youtu.be/JLWRZ8eWyZo?si=EmeS9fJvS_OkDk7p` }, { quoted: m });
+      await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
+    }
+      
+      
+      
+      
 };
 
-const handler = async (m, { conn, text }) => {
-  if (!text || text.trim().length < 2) {
-    return m.reply("❌ الرجاء كتابة اسم الأغنية بوضوح.");
-  }
-
-  try {
-    const search = await yts(text);
-    const video = search.all[0];
-    if (!video) return m.reply('لم يتم العثور على نتائج.');
-
-    const detail = `
-    ✩ 『العنوان📌』: *${video.title}*
-    
-    
-    ✩ 『المده🕐』: ${video.timestamp}
-    
-    
-    ✩ 『المشاهده👀』: ${video.views}
-    
-    
-    ✩ 『الفنان🙋』: ${video.author.name}
-    
-    
-    ✩ 『مدة النشر🧚‍♀️』: ${video.ago}
-    
-    
-    ✩ 『الرابط🔗』: ${video.url}
-    
-    *𝑻𝑼𝑹𝑩𝑶﹝⚡️﹞𝑩𝑶𝑻
-    `;
-
-    await conn.sendMessage(m.chat, {
-      text: detail,
-      contextInfo: {
-        externalAdReply: {
-          title: video.title,
-          body: "Powered By Shadow",
-          thumbnailUrl: video.image,
-          mediaUrl: video.url,
-        },
-      },
-    }, { quoted: m });
-
-    const downloadUrl = await downloadMedia(video.url);
-    if (!downloadUrl) return m.reply('فشل تحميل الصوت.');
-
-    await conn.sendMessage(m.chat, {
-      audio: { url: downloadUrl },
-      mimetype: 'audio/mpeg',
-      ptt: true,
-    }, { quoted: m });
-  } catch (error) {
-    m.reply(`خطأ: ${error.message}`);
-  }
-};
-
-handler.help = ['اغنية <اسم الأغنية>'];
-handler.tags = ['بحث', 'صوت'];
-handler.command = /^(اغنيه|اغنية|اغاني)$/i;
-
+handler.command = /^(اغنيه|اغنية)$/i;
 export default handler;
+
+async function search(query, options = {}) {
+  const search = await yts.search({ query, hl: 'ar', gl: 'AR', ...options });
+  return search.videos;
+}
+
+async function getmp3url(url) {
+  
+  const fetchUrl = `https://rembotapi.vercel.app/api/yt?url=${encodeURIComponent(url)}`;
+    
+    const response = await fetch(fetchUrl);
+    const data = await response.json();
+    
+    if (!data.status) {
+      return conn.reply(m.chat, `❌ _Error:_ ${data.message || 'No se encontró el video'}`, m);
+    }
+    
+  return data.data;
+}
+
+function MilesNumber(number) {
+  const exp = /(\d)(?=(\d{3})+(?!\d))/g;
+  const rep = '$1.';
+  const arr = number.toString().split('.');
+  arr[0] = arr[0].replace(exp, rep);
+  return arr[1] ? arr.join('.') : arr[0];
+}
+
+function secondString(seconds) {
+  seconds = Number(seconds);
+  const d = Math.floor(seconds / (3600 * 24));
+  const h = Math.floor((seconds % (3600 * 24)) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  const dDisplay = d > 0 ? d + (d == 1 ? ' día, ' : ' días, ') : '';
+  const hDisplay = h > 0 ? h + (h == 1 ? ' hora, ' : ' horas, ') : '';
+  const mDisplay = m > 0 ? m + (m == 1 ? ' minuto, ' : ' minutos, ') : '';
+  const sDisplay = s > 0 ? s + (s == 1 ? ' segundo' : ' segundos') : '';
+  return dDisplay + hDisplay + mDisplay + sDisplay;
+}
+
+function bytesToSize(bytes) {
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  if (bytes === 0) return 'n/a';
+  const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)), 10);
+  return i === 0 ? `${bytes} ${sizes[i]}` : `${(bytes / (1024 ** i)).toFixed(1)} ${sizes[i]}`;
+}
+
+
+
+/*
+╮────────────────────────╭ـ
+│ By : 𝗦𝗔𝗬𝗘𝗗-𝗦𝗛𝗔𝗪𝗔𝗭𝗔 🧞
+│ Number : https://wa.me/201145624848
+│ Community : https://chat.whatsapp.com/Hg4F5jQ9Z9r1lUH6I1jkhI
+│ Group Support : https://chat.whatsapp.com/JGtNRFwfHJC8XholdKmVGS
+│ Chanel : https://whatsapp.com/channel/0029Vael6wMJP20ze3IXJk0z
+╯────────────────────────╰ـ 
+*/
