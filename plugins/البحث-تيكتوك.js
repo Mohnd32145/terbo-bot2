@@ -49,5 +49,5 @@ await conn.reply(message.chat, error.toString(), message)
 
 handler.help = ['tiktoksearch <txt>']
 handler.tags = ['buscador']
-handler.command = ['tiktoksearch', 'tts', 'تيك']
+handler.command = ['tiktoksearch', 'tts', 'استوري']
 export default handler
