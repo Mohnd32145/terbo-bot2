@@ -1,59 +1,38 @@
-import fetch from 'node-fetch'; // Importing the library for HTTP requests
+import translate from '@vitalets/google-translate-api';
+import axios from 'axios';
+import fetch from 'node-fetch';
 const handler = (m) => m;
 
 handler.before = async (m) => {
-  const chat = global.db.data.chats[m.chat]; // Retrieve chat settings
-  if (chat.simi) { // Check if AI functionality is enabled
-    if (/^.*false|disnable|(turn)?off|0/i.test(m.text)) return; // Ignore if disabled
-    let messageText = m.text; // Store the message text
-
-    // Filter specific keywords to ignore
-    if (
-      m.text.includes('بوت') || 
-      m.text.includes('القائمة') || 
-      m.text.includes('تشغيل') || 
-      m.text.includes('حالة') || 
-      m.text.includes('مساعدة')
-    ) return;
-
+  const chat = global.db.data.chats[m.chat];
+  if (chat.simi) {
+    if (/^.*false|disnable|(turn)?off|0/i.test(m.text)) return;
+    let textodem = m.text;
     try {
-      await conn.sendPresenceUpdate('composing', m.chat); // Show "typing" status
-
-      // Send the text to the primary AI API
-      let gpt = await fetch(`https://deliriusapi-official.vercel.app/tools/simi?text=${encodeURIComponent(messageText)}`);
-      let res = await gpt.json(); // Parse the response
-      await m.reply(res.data.message); // Reply to the user with the generated message
-    } catch (error) {
-      // Use an alternative API in case of failure
-      try {
-        // Translate the text to English before sending it (if the first API fails)
-        const translation = await fetch(
-          `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(messageText)}`
-        );
-        const translationResult = await translation.json();
-        const senderName = m.pushName || 'User';
-        
-        // Send the translated text to another AI API
-        const aiResponse = await fetch(
-          `http://api.brainshop.ai/get?bid=153868&key=rcKonOgrUFmn5usX&uid=${senderName}&msg=${translationResult[0][0][0]}`
-        );
-        const aiResult = await aiResponse.json();
-        
-        // Translate the response back to Arabic
-        const translateToArabic = await fetch(
-          `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=ar&dt=t&q=${encodeURIComponent(aiResult.cnt)}`
-        );
-        const arabicResponse = await translateToArabic.json();
-
-        // Reply to the user with the Arabic response
-        await m.reply(arabicResponse[0][0][0]);
-      } catch (error) {
-        await m.reply('عذرًا، حدث خطأ أثناء معالجة طلبك.'); // Send an error message
-      }
+      const ressimi = await simitalk(textodem);
+      await m.conn.sendMessage(m.chat, { text: ressimi.resultado.simsimi }, { quoted: m });
+    } catch {
+      throw '*[❗] La API de Simsimi presenta errores.*';
     }
-    return true;
+    return !0;
   }
   return true;
 };
-
 export default handler;
+
+async function simitalk(ask, apikeyyy = "iJ6FxuA9vxlvz5cKQCt3", language = "es") {
+    if (!ask) return { status: false, resultado: { msg: "Debes ingresar un texto para hablar con simsimi." }};
+    try {
+        const response1 = await axios.get(`https://delirios-api-delta.vercel.app/tools/simi?text=${encodeURIComponent(ask)}`);
+        const trad1 = await translate(`${response1.data.data.message}`, {to: language, autoCorrect: true});
+        if (trad1.text == 'indefinida' || response1 == '' || !response1.data) trad1 = XD // Se usa "XD" para causar error y usar otra opción.  
+        return { status: true, resultado: { simsimi: trad1.text }};        
+    } catch {
+        try {
+            const response2 = await axios.get(`https://anbusec.xyz/api/v1/simitalk?apikey=${apikeyyy}&ask=${ask}&lc=${language}`);
+            return { status: true, resultado: { simsimi: response2.data.message }};       
+        } catch (error2) {
+            return { status: false, resultado: { msg: "Todas las API's fallarón. Inténtalo de nuevo más tarde.", error: error2.message }};
+        }
+    }
+}
