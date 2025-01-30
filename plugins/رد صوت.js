@@ -29,12 +29,6 @@ handler.all = async function (m) {
     conn.sendPresenceUpdate( 'recording' , m.chat);
     conn.sendMessage(m.chat, { audio: { url: vn }, ptt: true, mimetype: 'audio/mpeg' , fileName: `shawaza_zizo_2024.opp` }, { quoted: m });
   }
-  if (/^ههههه|😂😂|ضحك$/i.test(m.text)) {
-    let vn =  'https://qu.ax/PFyy.wav' ;
-    conn.sendPresenceUpdate( 'recording' , m.chat);
-    conn.sendMessage(m.chat, { audio: { url: vn }, ptt: true, mimetype:  'audio/mpeg' , fileName: `shawaza_zizo_2024.opp` }, { quoted: m });
-  }
-
   if (/^بضاني$/i.test(m.text)) {
     let vn = 'https://qu.ax/oOd';
     conn.sendPresenceUpdate('recording', m.chat);
