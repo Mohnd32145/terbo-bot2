@@ -53,7 +53,7 @@ await conn.sendContact(m.chat, [[`201276506015` + `@s.whatsapp.net`, wm]], vn, {
 isForwarded: false, 
  externalAdReply: {  
  title: '♯𝑻𝑼𝑹𝑩𝑶◡̈⃝', 
- body: '', 
+ body: '𝑻𝑬𝑹𝑩𝑶〔⚡️〕𝑩𝑶𝑻', 
  sourceUrl: 'https://whatsapp.com/channel/0029Vael6wMJP20ze3IXJk0z',
  thumbnail: vn2,
  thumbnailUrl: vn2, 
