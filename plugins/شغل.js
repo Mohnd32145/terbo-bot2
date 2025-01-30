@@ -86,7 +86,8 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
           body: "❲ قسم البحث ❳",
           thumbnailUrl: imagurl,
           mediaUrl: imagurl,
-          mediaType: https://youtube.com',
+          mediaType: 1,
+          sourceUrl: 'https://www.atom.bio/shawaza-2000/',
           renderLargerThumbnail: false
         }
       },
