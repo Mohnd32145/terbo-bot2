@@ -152,6 +152,6 @@ let handler = async function (_0x2937c8, {
     console.error("خــطــأ", _0x2dd35e);
   }
 };
-handler.command = ["الالقاب", "تسجيل", "لقبي", "لقبه", "حذف_لقب", "لقب"];
+handler.command = ["الالقاب", "j", "لقبي", "لقبه", "حذف_لقب", "لقب"];
 handler.tags = ["BK9"];
 export default handler;
